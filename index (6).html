@@ -1,0 +1,1408 @@
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <title>Job Application Tracker (Mini CRM)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background: #f9fafb;
+    }
+    /* Scrollbar for notes overflow */
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgba(99, 102, 241, 0.6);
+      border-radius: 3px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    /* Fade transition for modals */
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: opacity 0.3s ease;
+    }
+    .fade-enter-from,
+    .fade-leave-to {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-gradient-to-b from-indigo-50 to-white">
+  <div id="app" class="flex-grow flex flex-col">
+    <!-- Navigation -->
+    <nav class="bg-gradient-to-r from-indigo-700 to-purple-700 shadow-lg sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+        <div class="flex justify-between h-20 items-center">
+          <div class="flex items-center space-x-4">
+            <img
+              src="https://placehold.co/48x48/png?text=JAT&font=roboto&font-weight=700&bg=4f46e5&fg=ffffff"
+              alt="Logo with letters JAT in white on blue-purple gradient background"
+              class="h-12 w-12 rounded-lg shadow-lg"
+              width="48"
+              height="48"
+              loading="lazy"
+            />
+            <div>
+              <h1 class="text-white font-extrabold text-2xl tracking-wide select-none drop-shadow-lg">
+                JobAppTracker
+              </h1>
+              <p class="text-indigo-300 text-xs font-semibold tracking-wide select-none">
+                Your Personal Job CRM
+              </p>
+            </div>
+          </div>
+          <div class="hidden md:flex items-center space-x-8">
+            <button
+              v-if="!user"
+              @click="showLogin = true"
+              class="text-indigo-200 hover:text-white font-semibold transition duration-300"
+              aria-label="Login"
+            >
+              Login
+            </button>
+            <button
+              v-if="!user"
+              @click="showSignup = true"
+              class="text-indigo-200 hover:text-white font-semibold transition duration-300"
+              aria-label="Sign Up"
+            >
+              Sign Up
+            </button>
+            <div v-if="user" class="flex items-center space-x-4">
+              <img
+                :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=4338ca&color=fff&rounded=true&size=40`"
+                :alt="`Avatar of ${user.name}`"
+                class="h-10 w-10 rounded-full border-2 border-white shadow-md"
+                loading="lazy"
+              />
+              <span class="text-white font-semibold select-none">
+                {{ user.name }}
+              </span>
+              <button
+                @click="logout"
+                class="text-indigo-300 hover:text-white transition duration-300"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <i class="fas fa-sign-out-alt text-lg"></i>
+              </button>
+            </div>
+          </div>
+          <div class="md:hidden">
+            <button
+              @click="mobileMenuOpen = !mobileMenuOpen"
+              class="text-indigo-300 hover:text-white focus:outline-none"
+              aria-label="Toggle menu"
+            >
+              <i
+                :class="mobileMenuOpen ? 'fas fa-times' : 'fas fa-bars'"
+                class="text-2xl"
+              ></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        v-if="mobileMenuOpen"
+        class="md:hidden bg-gradient-to-r from-indigo-700 to-purple-700 shadow-inner"
+      >
+        <div class="px-6 py-4 space-y-3">
+          <button
+            v-if="!user"
+            @click="showLogin = true; mobileMenuOpen = false"
+            class="block w-full text-left text-indigo-200 font-semibold hover:text-white transition duration-300"
+          >
+            Login
+          </button>
+          <button
+            v-if="!user"
+            @click="showSignup = true; mobileMenuOpen = false"
+            class="block w-full text-left text-indigo-200 font-semibold hover:text-white transition duration-300"
+          >
+            Sign Up
+          </button>
+          <div v-if="user" class="flex items-center justify-between">
+            <span class="text-indigo-200 font-semibold select-none">
+              Hello, {{ user.name }}
+            </span>
+            <button
+              @click="logout"
+              class="text-indigo-300 hover:text-white transition duration-300"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <i class="fas fa-sign-out-alt text-lg"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section for logged out users -->
+    <section
+      v-if="!user"
+      class="flex-grow flex flex-col items-center justify-center px-6 text-center max-w-4xl mx-auto py-20"
+    >
+      <img
+        src="https://placehold.co/600x320/png?text=Job+Applications+Tracking+Illustration&font=roboto&font-weight=700&bg=ede9fe&fg=4338ca"
+        alt="Illustration of a person managing job applications on a laptop with charts and checklists"
+        class="w-full max-w-xl rounded-3xl shadow-2xl mb-10"
+        loading="lazy"
+      />
+      <h2 class="text-5xl font-extrabold text-indigo-700 mb-6 drop-shadow-md leading-tight">
+        Track Your Job Applications Effortlessly
+      </h2>
+      <p class="text-gray-600 max-w-3xl mb-12 leading-relaxed text-lg">
+        Organize, monitor, and manage your job applications in one place. Stay
+        on top of your career journey with real-time notifications and
+        insightful analytics.
+      </p>
+      <div class="flex space-x-8 justify-center">
+        <button
+          @click="showSignup = true"
+          class="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-lg hover:bg-indigo-700 transition duration-300 font-semibold tracking-wide focus:outline-none focus:ring-4 focus:ring-indigo-400"
+          aria-label="Sign Up"
+        >
+          Get Started
+        </button>
+        <button
+          @click="showLogin = true"
+          class="px-10 py-4 border-2 border-indigo-600 text-indigo-600 rounded-2xl shadow-lg hover:bg-indigo-50 transition duration-300 font-semibold tracking-wide focus:outline-none focus:ring-4 focus:ring-indigo-400"
+          aria-label="Login"
+        >
+          Login
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Dashboard for logged in users -->
+    <main
+      v-if="user"
+      class="flex-grow max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-12"
+      aria-label="Job Application Dashboard"
+    >
+      <header class="flex flex-col md:flex-row md:items-center md:justify-between mb-12">
+        <div class="flex items-center space-x-5">
+          <img
+            src="https://placehold.co/64x64/png?text=📋&font=roboto&font-weight=700&bg=ede9fe&fg=4338ca"
+            alt="Clipboard icon representing job list"
+            class="h-16 w-16 rounded-xl shadow-lg"
+            loading="lazy"
+          />
+          <h2 class="text-4xl font-extrabold text-indigo-700 tracking-tight drop-shadow-sm">
+            Your Job Applications
+          </h2>
+        </div>
+        <button
+          @click="openAddJobModal"
+          class="mt-8 md:mt-0 inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-3xl shadow-xl hover:from-indigo-700 hover:to-purple-700 transition duration-300 font-semibold tracking-wide focus:outline-none focus:ring-4 focus:ring-indigo-400"
+          aria-label="Add Job Application"
+        >
+          <i class="fas fa-plus mr-4 text-lg"></i> Add Job Application
+        </button>
+      </header>
+
+      <!-- Filters & Sort with Search -->
+      <section
+        class="flex flex-col md:flex-row md:items-center md:space-x-8 space-y-5 md:space-y-0 mb-12"
+        aria-label="Filters and sorting controls"
+      >
+        <div class="flex items-center space-x-4 w-full md:w-auto">
+          <label
+            for="filterStatus"
+            class="font-semibold text-gray-700 select-none whitespace-nowrap"
+            >Filter by Status:</label
+          >
+          <select
+            id="filterStatus"
+            v-model="filters.status"
+            class="w-full md:w-52 border border-gray-300 rounded-2xl px-5 py-3 focus:outline-none focus:ring-4 focus:ring-indigo-500 transition shadow-sm"
+          >
+            <option value="">All</option>
+            <option value="Applied">Applied</option>
+            <option value="Interview">Interview</option>
+            <option value="Offer">Offer</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Accepted">Accepted</option>
+          </select>
+        </div>
+        <div class="flex items-center space-x-4 w-full md:w-auto">
+          <label
+            for="sortDate"
+            class="font-semibold text-gray-700 select-none whitespace-nowrap"
+            >Sort by Applied Date:</label
+          >
+          <select
+            id="sortDate"
+            v-model="filters.sort"
+            class="w-full md:w-52 border border-gray-300 rounded-2xl px-5 py-3 focus:outline-none focus:ring-4 focus:ring-indigo-500 transition shadow-sm"
+          >
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
+          </select>
+        </div>
+        <div class="flex items-center space-x-4 w-full md:w-auto flex-grow">
+          <label
+            for="searchInput"
+            class="font-semibold text-gray-700 select-none whitespace-nowrap"
+            >Search:</label
+          >
+          <input
+            id="searchInput"
+            type="search"
+            v-model="filters.search"
+            placeholder="Search by company or role"
+            class="w-full border border-gray-300 rounded-2xl px-5 py-3 focus:outline-none focus:ring-4 focus:ring-indigo-500 transition shadow-sm"
+            aria-label="Search job applications by company or role"
+          />
+        </div>
+      </section>
+
+      <!-- Analytics Cards -->
+      <section
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-14"
+        aria-label="Job application status summary"
+      >
+        <div
+          v-for="(count, status) in statusCounts"
+          :key="status"
+          class="bg-white rounded-3xl shadow-lg p-8 flex flex-col items-center justify-center hover:shadow-2xl transition duration-300 cursor-default"
+          :title="`${count} applications with status ${status}`"
+        >
+          <div
+            :class="[
+              'p-5 rounded-full mb-5',
+              statusColor(status).replace('bg-', 'bg-opacity-25 ') + ' ' + statusColor(status).replace('text-', 'text-opacity-90 '),
+            ]"
+          >
+            <i
+              :class="statusIcon(status)"
+              class="text-4xl"
+              aria-hidden="true"
+            ></i>
+          </div>
+          <p class="text-3xl font-extrabold text-gray-900 select-none">{{ count }}</p>
+          <p class="text-gray-600 font-semibold select-none tracking-wide">{{ status }}</p>
+        </div>
+      </section>
+
+      <!-- Job List Cards -->
+      <section aria-label="List of job applications">
+        <div v-if="filteredJobs.length === 0" class="text-center py-28 text-gray-500 text-xl select-none">
+          No job applications found.
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <article
+            v-for="job in filteredJobs"
+            :key="job._id"
+            class="bg-white rounded-3xl shadow-xl p-8 flex flex-col justify-between hover:shadow-3xl transition duration-300 focus-within:ring-4 focus-within:ring-indigo-400"
+            tabindex="0"
+            :aria-label="`Job application for ${job.role} at ${job.company}, status ${job.status}`"
+          >
+            <header class="mb-6 flex items-center justify-between">
+              <div>
+                <h3
+                  class="text-3xl font-extrabold text-indigo-700 truncate"
+                  :title="job.role"
+                >
+                  {{ job.role }}
+                </h3>
+                <p
+                  class="text-gray-600 font-semibold truncate text-lg"
+                  :title="job.company"
+                >
+                  {{ job.company }}
+                </p>
+              </div>
+              <span
+                :class="statusColor(job.status) + ' font-semibold px-4 py-2 rounded-full text-base select-none whitespace-nowrap shadow-sm'"
+                aria-label="Application status"
+              >
+                {{ job.status }}
+              </span>
+            </header>
+            <div class="mb-6 text-gray-700 text-base leading-relaxed scrollbar-thin max-h-36 overflow-y-auto whitespace-pre-wrap break-words rounded-lg border border-gray-200 p-4 bg-indigo-50 shadow-inner">
+              {{ job.notes || "No additional notes." }}
+            </div>
+            <footer class="flex items-center justify-between text-gray-500 text-sm select-none font-medium tracking-wide">
+              <time :datetime="job.appliedDate" aria-label="Applied date" class="italic">
+                Applied: {{ formatDate(job.appliedDate) }}
+              </time>
+              <div class="flex space-x-6 text-indigo-600">
+                <button
+                  @click="openEditJobModal(job)"
+                  class="hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-lg p-2 transition"
+                  aria-label="Edit job application"
+                  title="Edit"
+                >
+                  <i class="fas fa-edit text-lg"></i>
+                </button>
+                <button
+                  @click="openDeleteJobModal(job)"
+                  class="hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 rounded-lg p-2 transition"
+                  aria-label="Delete job application"
+                  title="Delete"
+                >
+                  <i class="fas fa-trash-alt text-lg"></i>
+                </button>
+                <button
+                  @click="openDetailsModal(job)"
+                  class="hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 rounded-lg p-2 transition"
+                  aria-label="View job application details"
+                  title="Details"
+                >
+                  <i class="fas fa-info-circle text-lg"></i>
+                </button>
+              </div>
+            </footer>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer
+      class="bg-gradient-to-r from-indigo-700 to-purple-700 text-indigo-200 text-center py-8 select-none shadow-inner"
+      aria-label="Footer"
+    >
+      <p class="text-sm tracking-wide">&copy; 2024 Job Application Tracker. All rights reserved.</p>
+    </footer>
+
+    <!-- Modals -->
+
+    <!-- Login Modal -->
+    <transition name="fade">
+      <div
+        v-if="showLogin"
+        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="loginTitle"
+      >
+        <div
+          @keydown.escape.window="showLogin = false"
+          class="bg-white rounded-3xl shadow-3xl max-w-md w-full p-10 relative"
+        >
+          <h3
+            id="loginTitle"
+            class="text-4xl font-extrabold text-indigo-700 mb-8 text-center tracking-wide"
+          >
+            Login to Your Account
+          </h3>
+          <form @submit.prevent="loginUser" class="space-y-8" novalidate>
+            <div>
+              <label
+                for="loginEmail"
+                class="block text-gray-700 font-semibold mb-3 text-lg"
+                >Email</label
+              >
+              <input
+                id="loginEmail"
+                type="email"
+                v-model="loginForm.email"
+                required
+                autocomplete="username"
+                class="w-full border border-gray-300 rounded-2xl px-6 py-4 focus:outline-none focus:ring-6 focus:ring-indigo-400 transition shadow-sm text-lg"
+                placeholder="you@example.com"
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label
+                for="loginPassword"
+                class="block text-gray-700 font-semibold mb-3 text-lg"
+                >Password</label
+              >
+              <input
+                id="loginPassword"
+                type="password"
+                v-model="loginForm.password"
+                required
+                minlength="6"
+                autocomplete="current-password"
+                class="w-full border border-gray-300 rounded-2xl px-6 py-4 focus:outline-none focus:ring-6 focus:ring-indigo-400 transition shadow-sm text-lg"
+                placeholder="••••••••"
+                aria-required="true"
+              />
+            </div>
+            <div class="flex justify-between items-center">
+              <button
+                :disabled="loginLoading"
+                type="submit"
+                class="flex items-center justify-center space-x-3 px-8 py-4 bg-indigo-600 text-white rounded-3xl shadow-xl hover:bg-indigo-700 transition duration-300 font-semibold tracking-wide focus:outline-none focus:ring-6 focus:ring-indigo-500 disabled:opacity-60"
+                aria-live="polite"
+              >
+                <span v-if="!loginLoading">Login</span>
+                <span v-else>Loading...</span>
+                <i v-if="!loginLoading" class="fas fa-sign-in-alt text-xl"></i>
+                <i v-else class="fas fa-spinner fa-spin text-xl"></i>
+              </button>
+              <button
+                @click="switchToSignup"
+                type="button"
+                class="text-indigo-600 hover:underline font-semibold text-lg focus:outline-none"
+              >
+                Don't have an account?
+              </button>
+            </div>
+            <p
+              v-if="loginError"
+              class="text-red-600 text-base mt-3 font-semibold select-none"
+              role="alert"
+              aria-live="assertive"
+            >
+              {{ loginError }}
+            </p>
+          </form>
+          <button
+            @click="showLogin = false"
+            aria-label="Close login modal"
+            class="absolute top-6 right-6 text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <i class="fas fa-times text-3xl"></i>
+          </button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Signup Modal -->
+    <transition name="fade">
+      <div
+        v-if="showSignup"
+        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="signupTitle"
+      >
+        <div
+          @keydown.escape.window="showSignup = false"
+          class="bg-white rounded-3xl shadow-3xl max-w-md w-full p-10 relative"
+        >
+          <h3
+            id="signupTitle"
+            class="text-4xl font-extrabold text-indigo-700 mb-8 text-center tracking-wide"
+          >
+            Create Your Account
+          </h3>
+          <form @submit.prevent="signupUser" class="space-y-8" novalidate>
+            <div>
+              <label
+                for="signupName"
+                class="block text-gray-700 font-semibold mb-3 text-lg"
+                >Full Name</label
+              >
+              <input
+                id="signupName"
+                type="text"
+                v-model="signupForm.name"
+                required
+                minlength="2"
+                autocomplete="name"
+                class="w-full border border-gray-300 rounded-2xl px-6 py-4 focus:outline-none focus:ring-6 focus:ring-indigo-400 transition shadow-sm text-lg"
+                placeholder="John Doe"
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label
+                for="signupEmail"
+                class="block text-gray-700 font-semibold mb-3 text-lg"
+                >Email</label
+              >
+              <input
+                id="signupEmail"
+                type="email"
+                v-model="signupForm.email"
+                required
+                autocomplete="email"
+                class="w-full border border-gray-300 rounded-2xl px-6 py-4 focus:outline-none focus:ring-6 focus:ring-indigo-400 transition shadow-sm text-lg"
+                placeholder="you@example.com"
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label
+                for="signupPassword"
+                class="block text-gray-700 font-semibold mb-3 text-lg"
+                >Password</label
+              >
+              <input
+                id="signupPassword"
+                type="password"
+                v-model="signupForm.password"
+                required
+                minlength="6"
+                autocomplete="new-password"
+                class="w-full border border-gray-300 rounded-2xl px-6 py-4 focus:outline-none focus:ring-6 focus:ring-indigo-400 transition shadow-sm text-lg"
+                placeholder="••••••••"
+                aria-required="true"
+              />
+            </div>
+            <div class="flex justify-between items-center">
+              <button
+                :disabled="signupLoading"
+                type="submit"
+                class="flex items-center justify-center space-x-3 px-8 py-4 bg-indigo-600 text-white rounded-3xl shadow-xl hover:bg-indigo-700 transition duration-300 font-semibold tracking-wide focus:outline-none focus:ring-6 focus:ring-indigo-500 disabled:opacity-60"
+                aria-live="polite"
+              >
+                <span v-if="!signupLoading">Sign Up</span>
+                <span v-else>Loading...</span>
+                <i v-if="!signupLoading" class="fas fa-user-plus text-xl"></i>
+                <i v-else class="fas fa-spinner fa-spin text-xl"></i>
+              </button>
+              <button
+                @click="switchToLogin"
+                type="button"
+                class="text-indigo-600 hover:underline font-semibold text-lg focus:outline-none"
+              >
+                Already have an account?
+              </button>
+            </div>
+            <p
+              v-if="signupError"
+              class="text-red-600 text-base mt-3 font-semibold select-none"
+              role="alert"
+              aria-live="assertive"
+            >
+              {{ signupError }}
+            </p>
+          </form>
+          <button
+            @click="showSignup = false"
+            aria-label="Close signup modal"
+            class="absolute top-6 right-6 text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <i class="fas fa-times text-3xl"></i>
+          </button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Add/Edit Job Modal -->
+    <transition name="fade">
+      <div
+        v-if="showJobModal"
+        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-6 overflow-auto"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="jobModalMode === 'add' ? 'addJobTitle' : 'editJobTitle'"
+      >
+        <div
+          @keydown.escape.window="closeJobModal"
+          class="bg-white rounded-3xl shadow-3xl max-w-lg w-full p-10 relative"
+        >
+          <h3
+            :id="jobModalMode === 'add' ? 'addJobTitle' : 'editJobTitle'"
+            class="text-4xl font-extrabold text-indigo-700 mb-8 text-center tracking-wide"
+          >
+            {{ jobModalMode === "add" ? "Add Job Application" : "Edit Job Application" }}
+          </h3>
+          <form @submit.prevent="submitJobForm" class="space-y-8" novalidate>
+            <div>
+              <label
+                for="company"
+                class="block text-gray-700 font-semibold mb-3 text-lg"
+                >Company</label
+              >
+              <input
+                id="company"
+                type="text"
+                v-model="jobForm.company"
+                required
+                minlength="2"
+                class="w-full border border-gray-300 rounded-2xl px-6 py-4 focus:outline-none focus:ring-6 focus:ring-indigo-400 transition shadow-sm text-lg"
+                placeholder="Company name"
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label
+                for="role"
+                class="block text-gray-700 font-semibold mb-3 text-lg"
+                >Role</label
+              >
+              <input
+                id="role"
+                type="text"
+                v-model="jobForm.role"
+                required
+                minlength="2"
+                class="w-full border border-gray-300 rounded-2xl px-6 py-4 focus:outline-none focus:ring-6 focus:ring-indigo-400 transition shadow-sm text-lg"
+                placeholder="Job title or role"
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label
+                for="status"
+                class="block text-gray-700 font-semibold mb-3 text-lg"
+                >Status</label
+              >
+              <select
+                id="status"
+                v-model="jobForm.status"
+                required
+                class="w-full border border-gray-300 rounded-2xl px-6 py-4 focus:outline-none focus:ring-6 focus:ring-indigo-400 transition shadow-sm text-lg"
+                aria-required="true"
+              >
+                <option value="Applied">Applied</option>
+                <option value="Interview">Interview</option>
+                <option value="Offer">Offer</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Accepted">Accepted</option>
+              </select>
+            </div>
+            <div>
+              <label
+                for="appliedDate"
+                class="block text-gray-700 font-semibold mb-3 text-lg"
+                >Applied Date</label
+              >
+              <input
+                id="appliedDate"
+                type="date"
+                v-model="jobForm.appliedDate"
+                :max="today"
+                required
+                class="w-full border border-gray-300 rounded-2xl px-6 py-4 focus:outline-none focus:ring-6 focus:ring-indigo-400 transition shadow-sm text-lg"
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label
+                for="notes"
+                class="block text-gray-700 font-semibold mb-3 text-lg"
+                >Notes</label
+              >
+              <textarea
+                id="notes"
+                v-model="jobForm.notes"
+                rows="5"
+                placeholder="Optional notes about the job application"
+                class="w-full border border-gray-300 rounded-2xl px-6 py-4 focus:outline-none focus:ring-6 focus:ring-indigo-400 transition shadow-sm resize-y text-lg"
+              ></textarea>
+            </div>
+            <div class="flex justify-end space-x-8">
+              <button
+                @click="closeJobModal"
+                type="button"
+                class="px-8 py-4 border border-gray-300 rounded-2xl hover:bg-gray-100 transition duration-300 font-semibold tracking-wide focus:outline-none focus:ring-6 focus:ring-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                :disabled="jobFormLoading"
+                type="submit"
+                class="flex items-center justify-center space-x-3 px-8 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl hover:bg-indigo-700 transition duration-300 font-semibold tracking-wide focus:outline-none focus:ring-6 focus:ring-indigo-500 disabled:opacity-60"
+                aria-live="polite"
+              >
+                <span>
+                  {{ jobModalMode === "add" ? "Add Job" : "Save Changes" }}
+                </span>
+                <i
+                  v-if="!jobFormLoading"
+                  :class="jobModalMode === 'add' ? 'fas fa-plus' : 'fas fa-save'"
+                  class="text-xl"
+                ></i>
+                <i v-else class="fas fa-spinner fa-spin text-xl"></i>
+              </button>
+            </div>
+            <p
+              v-if="jobFormError"
+              class="text-red-600 text-base mt-3 font-semibold select-none"
+              role="alert"
+              aria-live="assertive"
+            >
+              {{ jobFormError }}
+            </p>
+          </form>
+          <button
+            @click="closeJobModal"
+            aria-label="Close job modal"
+            class="absolute top-8 right-8 text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <i class="fas fa-times text-4xl"></i>
+          </button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Delete Confirmation Modal -->
+    <transition name="fade">
+      <div
+        v-if="showDeleteModal"
+        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deleteTitle"
+      >
+        <div
+          @keydown.escape.window="closeDeleteModal"
+          class="bg-white rounded-3xl shadow-3xl max-w-sm w-full p-10 relative"
+        >
+          <h3
+            id="deleteTitle"
+            class="text-4xl font-extrabold text-red-600 mb-8 text-center tracking-wide"
+          >
+            Delete Job Application
+          </h3>
+          <p class="mb-10 text-gray-700 text-center select-none text-lg leading-relaxed">
+            Are you sure you want to delete the job application for
+            <strong>{{ jobToDelete.role }}</strong> at
+            <strong>{{ jobToDelete.company }}</strong>? This action cannot be
+            undone.
+          </p>
+          <div class="flex justify-center space-x-10">
+            <button
+              @click="closeDeleteModal"
+              class="px-10 py-4 border border-gray-300 rounded-2xl hover:bg-gray-100 transition duration-300 font-semibold tracking-wide focus:outline-none focus:ring-6 focus:ring-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              :disabled="deleteLoading"
+              @click="deleteJob"
+              class="flex items-center justify-center space-x-3 px-10 py-4 bg-red-600 text-white rounded-2xl shadow-xl hover:bg-red-700 transition duration-300 font-semibold tracking-wide focus:outline-none focus:ring-6 focus:ring-red-500 disabled:opacity-60"
+              aria-live="polite"
+            >
+              <span>Delete</span>
+              <i v-if="!deleteLoading" class="fas fa-trash-alt text-xl"></i>
+              <i v-else class="fas fa-spinner fa-spin text-xl"></i>
+            </button>
+          </div>
+          <button
+            @click="closeDeleteModal"
+            aria-label="Close delete modal"
+            class="absolute top-8 right-8 text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <i class="fas fa-times text-4xl"></i>
+          </button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Job Details Modal -->
+    <transition name="fade">
+      <div
+        v-if="showDetailsModal"
+        class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-6 overflow-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detailsTitle"
+      >
+        <div
+          @keydown.escape.window="closeDetailsModal"
+          class="bg-white rounded-3xl shadow-3xl max-w-lg w-full p-10 relative"
+        >
+          <h3
+            id="detailsTitle"
+            class="text-4xl font-extrabold text-indigo-700 mb-8 text-center tracking-wide"
+          >
+            Job Application Details
+          </h3>
+          <dl class="grid grid-cols-1 gap-y-8 gap-x-10 sm:grid-cols-2 text-gray-700 select-text text-lg">
+            <div>
+              <dt class="font-semibold text-indigo-600 mb-2 text-xl">Company</dt>
+              <dd class="text-2xl font-semibold">{{ jobDetails.company }}</dd>
+            </div>
+            <div>
+              <dt class="font-semibold text-indigo-600 mb-2 text-xl">Role</dt>
+              <dd class="text-2xl font-semibold">{{ jobDetails.role }}</dd>
+            </div>
+            <div>
+              <dt class="font-semibold text-indigo-600 mb-2 text-xl">Status</dt>
+              <dd>
+                <span
+                  :class="statusColor(jobDetails.status) + ' font-semibold px-5 py-2 rounded-full text-lg select-none whitespace-nowrap shadow-md'"
+                  aria-label="Application status"
+                >
+                  {{ jobDetails.status }}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt class="font-semibold text-indigo-600 mb-2 text-xl">Applied Date</dt>
+              <dd class="text-2xl font-semibold">{{ formatDate(jobDetails.appliedDate) }}</dd>
+            </div>
+            <div class="sm:col-span-2">
+              <dt class="font-semibold text-indigo-600 mb-2 text-xl">Notes</dt>
+              <dd class="whitespace-pre-wrap break-words text-gray-800 max-h-56 overflow-y-auto scrollbar-thin rounded-2xl border border-gray-300 p-6 bg-indigo-50 shadow-inner text-lg">
+                {{ jobDetails.notes || "No additional notes." }}
+              </dd>
+            </div>
+          </dl>
+          <button
+            @click="closeDetailsModal"
+            class="mt-10 w-full px-8 py-4 bg-indigo-600 text-white rounded-3xl shadow-xl hover:bg-indigo-700 transition duration-300 font-semibold tracking-wide focus:outline-none focus:ring-6 focus:ring-indigo-500"
+          >
+            Close
+          </button>
+          <button
+            @click="closeDetailsModal"
+            aria-label="Close details modal"
+            class="absolute top-8 right-8 text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <i class="fas fa-times text-4xl"></i>
+          </button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Notification Toast -->
+    <transition name="fade">
+      <div
+        v-if="notification.show"
+        :class="[
+          'fixed bottom-10 right-10 max-w-xs w-full rounded-3xl shadow-2xl px-8 py-5 flex items-center space-x-6 z-50 select-none',
+          notification.type === 'success'
+            ? 'bg-green-600 text-white'
+            : 'bg-red-600 text-white',
+        ]"
+        role="alert"
+        aria-live="assertive"
+      >
+        <i
+          :class="[
+            'fas',
+            notification.type === 'success'
+              ? 'fa-check-circle'
+              : 'fa-exclamation-circle',
+            'text-3xl flex-shrink-0',
+          ]"
+          aria-hidden="true"
+        ></i>
+        <p class="flex-1 text-base font-semibold tracking-wide">{{ notification.message }}</p>
+        <button
+          @click="notification.show = false"
+          aria-label="Close notification"
+          class="text-white hover:text-gray-200 focus:outline-none"
+        >
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+    </transition>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // User state
+        const user = ref(null);
+
+        // Mobile menu toggle
+        const mobileMenuOpen = ref(false);
+
+        // Authentication modals
+        const showLogin = ref(false);
+        const showSignup = ref(false);
+
+        // Login form
+        const loginForm = reactive({
+          email: "",
+          password: "",
+        });
+        const loginLoading = ref(false);
+        const loginError = ref("");
+
+        // Signup form
+        const signupForm = reactive({
+          name: "",
+          email: "",
+          password: "",
+        });
+        const signupLoading = ref(false);
+        const signupError = ref("");
+
+        // Job applications list
+        const jobs = ref([]);
+
+        // Filters
+        const filters = reactive({
+          status: "",
+          sort: "desc",
+          search: "",
+        });
+
+        // Job modal (add/edit)
+        const showJobModal = ref(false);
+        const jobModalMode = ref("add"); // 'add' or 'edit'
+        const jobForm = reactive({
+          _id: null,
+          company: "",
+          role: "",
+          status: "Applied",
+          appliedDate: "",
+          notes: "",
+        });
+        const jobFormLoading = ref(false);
+        const jobFormError = ref("");
+
+        // Delete modal
+        const showDeleteModal = ref(false);
+        const jobToDelete = reactive({
+          _id: null,
+          company: "",
+          role: "",
+        });
+        const deleteLoading = ref(false);
+
+        // Details modal
+        const showDetailsModal = ref(false);
+        const jobDetails = reactive({
+          _id: null,
+          company: "",
+          role: "",
+          status: "",
+          appliedDate: "",
+          notes: "",
+        });
+
+        // Notification
+        const notification = reactive({
+          show: false,
+          message: "",
+          type: "success", // 'success' or 'error'
+        });
+
+        // Today's date for max date input
+        const today = new Date().toISOString().split("T")[0];
+
+        // Format date helper
+        function formatDate(dateStr) {
+          if (!dateStr) return "";
+          const d = new Date(dateStr);
+          return d.toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        }
+
+        // Status color helper
+        function statusColor(status) {
+          switch (status) {
+            case "Applied":
+              return "bg-blue-100 text-blue-800";
+            case "Interview":
+              return "bg-yellow-100 text-yellow-800";
+            case "Offer":
+              return "bg-green-100 text-green-800";
+            case "Rejected":
+              return "bg-red-100 text-red-800";
+            case "Accepted":
+              return "bg-indigo-100 text-indigo-800";
+            default:
+              return "bg-gray-100 text-gray-800";
+          }
+        }
+
+        // Status icon helper
+        function statusIcon(status) {
+          switch (status) {
+            case "Applied":
+              return "fas fa-paper-plane";
+            case "Interview":
+              return "fas fa-comments";
+            case "Offer":
+              return "fas fa-handshake";
+            case "Rejected":
+              return "fas fa-times-circle";
+            case "Accepted":
+              return "fas fa-check-circle";
+            default:
+              return "fas fa-briefcase";
+          }
+        }
+
+        // Filtered and sorted jobs with search
+        const filteredJobs = computed(() => {
+          let filtered = jobs.value;
+          if (filters.status) {
+            filtered = filtered.filter((job) => job.status === filters.status);
+          }
+          if (filters.search.trim()) {
+            const searchLower = filters.search.toLowerCase();
+            filtered = filtered.filter(
+              (job) =>
+                job.company.toLowerCase().includes(searchLower) ||
+                job.role.toLowerCase().includes(searchLower)
+            );
+          }
+          filtered = filtered.slice().sort((a, b) => {
+            const dateA = new Date(a.appliedDate);
+            const dateB = new Date(b.appliedDate);
+            if (filters.sort === "asc") return dateA - dateB;
+            else return dateB - dateA;
+          });
+          return filtered;
+        });
+
+        // Status counts for analytics cards
+        const statusCounts = computed(() => {
+          const counts = {
+            Applied: 0,
+            Interview: 0,
+            Offer: 0,
+            Rejected: 0,
+            Accepted: 0,
+          };
+          for (const job of jobs.value) {
+            if (counts[job.status] !== undefined) counts[job.status]++;
+          }
+          return counts;
+        });
+
+        // LocalStorage keys
+        const LS_USER_KEY = "jat_user";
+        const LS_JOBS_KEY = "jat_jobs";
+
+        // Simulate backend JWT token and user storage
+        function saveUserToStorage(userData) {
+          localStorage.setItem(LS_USER_KEY, JSON.stringify(userData));
+        }
+        function loadUserFromStorage() {
+          const u = localStorage.getItem(LS_USER_KEY);
+          if (u) return JSON.parse(u);
+          return null;
+        }
+        function clearUserStorage() {
+          localStorage.removeItem(LS_USER_KEY);
+        }
+
+        // Simulate backend jobs storage per user
+        function saveJobsToStorage(jobsList) {
+          if (!user.value) return;
+          localStorage.setItem(
+            LS_JOBS_KEY + "_" + user.value.email,
+            JSON.stringify(jobsList)
+          );
+        }
+        function loadJobsFromStorage() {
+          if (!user.value) return [];
+          const j = localStorage.getItem(LS_JOBS_KEY + "_" + user.value.email);
+          if (j) return JSON.parse(j);
+          return [];
+        }
+
+        // Simulate backend users database (in localStorage)
+        // Stored as array of users with {name, email, passwordHash}
+        const LS_USERS_KEY = "jat_users";
+
+        function getUsersFromStorage() {
+          const u = localStorage.getItem(LS_USERS_KEY);
+          if (u) return JSON.parse(u);
+          return [];
+        }
+        function saveUsersToStorage(users) {
+          localStorage.setItem(LS_USERS_KEY, JSON.stringify(users));
+        }
+
+        // Simple hash function for password (not secure, just for demo)
+        function simpleHash(str) {
+          let hash = 0,
+            i,
+            chr;
+          if (str.length === 0) return hash;
+          for (i = 0; i < str.length; i++) {
+            chr = str.charCodeAt(i);
+            hash = (hash << 5) - hash + chr;
+            hash |= 0; // Convert to 32bit integer
+          }
+          return hash.toString();
+        }
+
+        // Login user
+        async function loginUser() {
+          loginError.value = "";
+          loginLoading.value = true;
+          await new Promise((r) => setTimeout(r, 700)); // simulate delay
+
+          const users = getUsersFromStorage();
+          const foundUser = users.find(
+            (u) => u.email.toLowerCase() === loginForm.email.toLowerCase()
+          );
+          if (!foundUser) {
+            loginError.value = "User not found.";
+            loginLoading.value = false;
+            return;
+          }
+          if (foundUser.passwordHash !== simpleHash(loginForm.password)) {
+            loginError.value = "Incorrect password.";
+            loginLoading.value = false;
+            return;
+          }
+          user.value = { name: foundUser.name, email: foundUser.email };
+          saveUserToStorage(user.value);
+          jobs.value = loadJobsFromStorage();
+          loginLoading.value = false;
+          showLogin.value = false;
+          loginForm.email = "";
+          loginForm.password = "";
+          notify("Login successful!", "success");
+        }
+
+        // Signup user
+        async function signupUser() {
+          signupError.value = "";
+          signupLoading.value = true;
+          await new Promise((r) => setTimeout(r, 700)); // simulate delay
+
+          const users = getUsersFromStorage();
+          if (
+            users.find(
+              (u) => u.email.toLowerCase() === signupForm.email.toLowerCase()
+            )
+          ) {
+            signupError.value = "Email already registered.";
+            signupLoading.value = false;
+            return;
+          }
+          const newUser = {
+            name: signupForm.name.trim(),
+            email: signupForm.email.toLowerCase().trim(),
+            passwordHash: simpleHash(signupForm.password),
+          };
+          users.push(newUser);
+          saveUsersToStorage(users);
+          user.value = { name: newUser.name, email: newUser.email };
+          saveUserToStorage(user.value);
+          jobs.value = [];
+          signupLoading.value = false;
+          showSignup.value = false;
+          signupForm.name = "";
+          signupForm.email = "";
+          signupForm.password = "";
+          notify("Signup successful! Welcome!", "success");
+        }
+
+        // Logout
+        function logout() {
+          user.value = null;
+          jobs.value = [];
+          clearUserStorage();
+          notify("Logged out successfully.", "success");
+        }
+
+        // Open add job modal
+        function openAddJobModal() {
+          jobModalMode.value = "add";
+          jobForm._id = null;
+          jobForm.company = "";
+          jobForm.role = "";
+          jobForm.status = "Applied";
+          jobForm.appliedDate = today;
+          jobForm.notes = "";
+          jobFormError.value = "";
+          showJobModal.value = true;
+        }
+
+        // Open edit job modal
+        function openEditJobModal(job) {
+          jobModalMode.value = "edit";
+          jobForm._id = job._id;
+          jobForm.company = job.company;
+          jobForm.role = job.role;
+          jobForm.status = job.status;
+          jobForm.appliedDate = job.appliedDate;
+          jobForm.notes = job.notes;
+          jobFormError.value = "";
+          showJobModal.value = true;
+        }
+
+        // Close job modal
+        function closeJobModal() {
+          showJobModal.value = false;
+          jobFormError.value = "";
+        }
+
+        // Submit job form (add or edit)
+        async function submitJobForm() {
+          jobFormError.value = "";
+          if (
+            !jobForm.company.trim() ||
+            !jobForm.role.trim() ||
+            !jobForm.status ||
+            !jobForm.appliedDate
+          ) {
+            jobFormError.value = "Please fill in all required fields.";
+            return;
+          }
+          jobFormLoading.value = true;
+          await new Promise((r) => setTimeout(r, 700)); // simulate delay
+
+          if (jobModalMode.value === "add") {
+            // Add new job
+            const newJob = {
+              _id: crypto.randomUUID(),
+              company: jobForm.company.trim(),
+              role: jobForm.role.trim(),
+              status: jobForm.status,
+              appliedDate: jobForm.appliedDate,
+              notes: jobForm.notes.trim(),
+            };
+            jobs.value.push(newJob);
+            saveJobsToStorage(jobs.value);
+            notify("Job application added successfully.", "success");
+          } else if (jobModalMode.value === "edit") {
+            // Edit existing job
+            const idx = jobs.value.findIndex((j) => j._id === jobForm._id);
+            if (idx !== -1) {
+              jobs.value[idx].company = jobForm.company.trim();
+              jobs.value[idx].role = jobForm.role.trim();
+              jobs.value[idx].status = jobForm.status;
+              jobs.value[idx].appliedDate = jobForm.appliedDate;
+              jobs.value[idx].notes = jobForm.notes.trim();
+              saveJobsToStorage(jobs.value);
+              notify("Job application updated successfully.", "success");
+            } else {
+              jobFormError.value = "Job not found.";
+              jobFormLoading.value = false;
+              return;
+            }
+          }
+          jobFormLoading.value = false;
+          showJobModal.value = false;
+        }
+
+        // Open delete modal
+        function openDeleteJobModal(job) {
+          jobToDelete._id = job._id;
+          jobToDelete.company = job.company;
+          jobToDelete.role = job.role;
+          deleteLoading.value = false;
+          showDeleteModal.value = true;
+        }
+
+        // Close delete modal
+        function closeDeleteModal() {
+          showDeleteModal.value = false;
+          deleteLoading.value = false;
+        }
+
+        // Delete job
+        async function deleteJob() {
+          deleteLoading.value = true;
+          await new Promise((r) => setTimeout(r, 700)); // simulate delay
+          const idx = jobs.value.findIndex((j) => j._id === jobToDelete._id);
+          if (idx !== -1) {
+            jobs.value.splice(idx, 1);
+            saveJobsToStorage(jobs.value);
+            notify("Job application deleted.", "success");
+          } else {
+            notify("Job not found.", "error");
+          }
+          deleteLoading.value = false;
+          showDeleteModal.value = false;
+        }
+
+        // Open details modal
+        function openDetailsModal(job) {
+          jobDetails._id = job._id;
+          jobDetails.company = job.company;
+          jobDetails.role = job.role;
+          jobDetails.status = job.status;
+          jobDetails.appliedDate = job.appliedDate;
+          jobDetails.notes = job.notes;
+          showDetailsModal.value = true;
+        }
+
+        // Close details modal
+        function closeDetailsModal() {
+          showDetailsModal.value = false;
+        }
+
+        // Switch modals
+        function switchToSignup() {
+          showLogin.value = false;
+          showSignup.value = true;
+        }
+        function switchToLogin() {
+          showSignup.value = false;
+          showLogin.value = true;
+        }
+
+        // Notification helper
+        function notify(message, type = "success") {
+          notification.message = message;
+          notification.type = type;
+          notification.show = true;
+          setTimeout(() => {
+            notification.show = false;
+          }, 4000);
+        }
+
+        // On mounted, load user and jobs if logged in
+        onMounted(() => {
+          const storedUser = loadUserFromStorage();
+          if (storedUser) {
+            user.value = storedUser;
+            jobs.value = loadJobsFromStorage();
+          }
+        });
+
+        return {
+          user,
+          mobileMenuOpen,
+          showLogin,
+          showSignup,
+          loginForm,
+          loginLoading,
+          loginError,
+          signupForm,
+          signupLoading,
+          signupError,
+          jobs,
+          filters,
+          filteredJobs,
+          formatDate,
+          statusColor,
+          statusIcon,
+          statusCounts,
+          today,
+          showJobModal,
+          jobModalMode,
+          jobForm,
+          jobFormLoading,
+          jobFormError,
+          showDeleteModal,
+          jobToDelete,
+          deleteLoading,
+          showDetailsModal,
+          jobDetails,
+          notification,
+          loginUser,
+          signupUser,
+          logout,
+          openAddJobModal,
+          openEditJobModal,
+          closeJobModal,
+          submitJobForm,
+          openDeleteJobModal,
+          closeDeleteModal,
+          deleteJob,
+          openDetailsModal,
+          closeDetailsModal,
+          switchToSignup,
+          switchToLogin,
+        };
+      },
+    }).mount("#app");
+  </script>
+</body>
+</html>
